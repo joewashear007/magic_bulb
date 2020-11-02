@@ -43,7 +43,16 @@ class RBGCWBulb(baseBulb.BaseBulb):
             await self.state()
         return self
 
-    async def setCw(self, w=None, c=None, brightness=None, persist=True, refreshState=True):
+    async def setCw(self, w=None, brightness=None, persist=True, refreshState=True):
+        """
+        * Cold-White on scale 1-100%
+        * Brightness on scale 1-100%
+
+        """
+
+        warm_light = (255 * w) * brightness
+        cold_light = (255 * (1 - w)) * brightness
+
         # assemble the message
         msg = bytearray([0x31] if persist else [0x41])  # 0: persistence
         # 1: red    - not used in white mode
@@ -52,8 +61,8 @@ class RBGCWBulb(baseBulb.BaseBulb):
         msg.append(0)
         # 3: blue   - not used in white mode
         msg.append(0)
-        msg.append(int(w or 0))                         # 4: warn white
-        msg.append(int(c or 0))                         # 5: cold white
+        msg.append(int(warm_light or 0))                         # 4: warn white
+        msg.append(int(cold_light or 0))                         # 5: cold white
         # 6: write mode - white mode 0x0f
         msg.append(0x0f)
         msg.append(0x0f)                                # 7: terminator bit

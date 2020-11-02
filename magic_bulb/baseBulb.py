@@ -34,7 +34,7 @@ class BaseBulb(ABC):
         self.port = port
         self._reader = None
         self._writer = None
-        self._raw_state = None
+        self._raw_state = bytearray(14)
 
     def __del__(self):
         if(self._writer is not None):
@@ -72,19 +72,19 @@ class BaseBulb(ABC):
 
         typical response:
         #pos  0  1  2  3  4  5  6  7  8  9 10
-            66 01 24 39 21 0a ff 00 00 01 99
-             |  |  |  |  |  |  |  |  |  |  |
-             |  |  |  |  |  |  |  |  |  |  checksum
-             |  |  |  |  |  |  |  |  |  warmwhite
-             |  |  |  |  |  |  |  |  blue
-             |  |  |  |  |  |  |  green 
-             |  |  |  |  |  |  red
-             |  |  |  |  |  speed: 0f = highest f0 is lowest
-             |  |  |  |  <don't know yet>
-             |  |  |  preset pattern             
-             |  |  off(23)/on(24)
-             |  type
-             msg head
+             66 01 24 39 21 0a ff 00 00 01 99
+              |  |  |  |  |  |  |  |  |  |  |
+              |  |  |  |  |  |  |  |  |  |  checksum
+              |  |  |  |  |  |  |  |  |  warmwhite
+              |  |  |  |  |  |  |  |  blue
+              |  |  |  |  |  |  |  green 
+              |  |  |  |  |  |  red
+              |  |  |  |  |  speed: 0f = highest f0 is lowest
+              |  |  |  |  <don't know yet>
+              |  |  |  preset pattern             
+              |  |  off(23)/on(24)
+              |  type
+              msg head
         
         response from a 5-channel LEDENET controller:
         pos  0  1  2  3  4  5  6  7  8  9 10 11 12 13
@@ -106,7 +106,8 @@ class BaseBulb(ABC):
              msg head
         
         """
-        self._raw_state = await self._send(self._state_msg)
+        raw_response = await self._send(self._state_msg, wait=True)
+        self._raw_state = bytearray(raw_response)
         logging.info(str(self._raw_state))
         return self._raw_state
 

@@ -1,12 +1,10 @@
 
-@staticmethod
 def addCheckSum(bytes) -> bytearray:
     """Adds a checksum byte to the end of a ByteArray"""
     checkByte = sum(bytes) & 0xFF
     bytes.append(checkByte)
     return bytes
 
-@staticmethod
 def delayToSpeed(delay):
     max_delay = 0x1f
     # speed is 0-100, delay is 1-31
@@ -20,7 +18,6 @@ def delayToSpeed(delay):
     speed = 100-inv_speed
     return speed
 
-@staticmethod
 def speedToDelay(speed):
     # speed is 0-100, delay is 1-31
     max_delay = 0x1f
@@ -34,7 +31,6 @@ def speedToDelay(speed):
     delay = delay + 1
     return delay
 
-@staticmethod
 def byteToPercent(byte):
     if byte > 255:
         byte = 255
@@ -42,7 +38,6 @@ def byteToPercent(byte):
         byte = 0
     return int((byte * 100)/255)
 
-@staticmethod
 def percentToByte(percent):
     if percent > 100:
         percent = 100

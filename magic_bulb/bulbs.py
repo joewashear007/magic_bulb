@@ -1,22 +1,27 @@
-from .baseBulb import BaseBulb
-from .helpers import addCheckSum
+from . import baseBulb
+from . import helpers
 import colorsys
 import asyncio
 
-class RBGCWBulb(BaseBulb):
-    def _power_on_msg(self): 
-        return addCheckSum(bytearray([0x71, 0x23, 0x0f]))
+class RBGCWBulb(baseBulb.BaseBulb):
 
-    def _power_off_msg(self): 
-        return addCheckSum(bytearray([0x71, 0x24, 0x0f]))
+    @property
+    def _power_on_msg(self) -> bytearray: 
+        return helpers.addCheckSum(bytearray([0x71, 0x23, 0x0f]))
 
-    def _state_msg(self): 
-        return addCheckSum(bytearray([0x81, 0x8a, 0x8b]))
+    @property
+    def _power_off_msg(self) -> bytearray: 
+        return helpers.addCheckSum(bytearray([0x71, 0x24, 0x0f]))
 
-    def _msg_length(self): 
+    @property
+    def _state_msg(self) -> bytearray: 
+        return helpers.addCheckSum(bytearray([0x81, 0x8a, 0x8b]))
+
+    @property
+    def _msg_length(self) -> int: 
         return 14
 
-    async def setRgb(self, r=None, g=None, b=None, brightness=None, persist=True, refreshState=True) -> RBGCWBulb:
+    async def setRgb(self, r=None, g=None, b=None, brightness=None, persist=True, refreshState=True):
         if brightness != None:
             hsv = colorsys.rgb_to_hsv(r, g, b)
             (r, g, b) = colorsys.hsv_to_rgb(hsv[0], hsv[1], brightness)
@@ -33,7 +38,7 @@ class RBGCWBulb(BaseBulb):
         # 6: write mode - color 0xf0
         msg.append(0xf0)
         msg.append(0x0f)                                # 7: terminator bit
-        await self._send(addCheckSum(msg), refreshState)
+        await self._send(helpers.addCheckSum(msg), refreshState)
         if(refreshState):
             await self.state()
         return self
@@ -52,7 +57,7 @@ class RBGCWBulb(BaseBulb):
         # 6: write mode - white mode 0x0f
         msg.append(0x0f)
         msg.append(0x0f)                                # 7: terminator bit
-        await self._send(addCheckSum(msg), refreshState)
+        await self._send(helpers.addCheckSum(msg), refreshState)
         if(refreshState):
             await self.state()
         return self

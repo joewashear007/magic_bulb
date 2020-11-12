@@ -1,24 +1,26 @@
 from . import baseBulb
 from . import helpers
+import logging
 import colorsys
 import asyncio
+
 
 class RBGCWBulb(baseBulb.BaseBulb):
 
     @property
-    def _power_on_msg(self) -> bytearray: 
+    def _power_on_msg(self) -> bytearray:
         return helpers.addCheckSum(bytearray([0x71, 0x23, 0x0f]))
 
     @property
-    def _power_off_msg(self) -> bytearray: 
+    def _power_off_msg(self) -> bytearray:
         return helpers.addCheckSum(bytearray([0x71, 0x24, 0x0f]))
 
     @property
-    def _state_msg(self) -> bytearray: 
+    def _state_msg(self) -> bytearray:
         return helpers.addCheckSum(bytearray([0x81, 0x8a, 0x8b]))
 
     @property
-    def _msg_length(self) -> int: 
+    def _msg_length(self) -> int:
         return 14
 
     async def setRgb(self, r=None, g=None, b=None, brightness=None, persist=True, refreshState=True):
@@ -39,19 +41,33 @@ class RBGCWBulb(baseBulb.BaseBulb):
         msg.append(0xf0)
         msg.append(0x0f)                                # 7: terminator bit
         await self._send(helpers.addCheckSum(msg), refreshState)
+        self._raw_state[9] = 0
+        self._raw_state[11] = 0
+        self._raw_state[6] = int(r or 0)
+        self._raw_state[7] = int(g or 0)
+        self._raw_state[8] = int(b or 0)
         if(refreshState):
             await self.state()
         return self
 
     async def setCw(self, w=None, brightness=None, persist=True, refreshState=True):
         """
-        * Cold-White on scale 1-100%
-        * Brightness on scale 1-100%
-
+        * Cold-White in mireds 153-370
+        * Brightness on scale 0-255
         """
+        if w < 153 or w > 370:
+            raise Exception(f"Color Temp '{w}' out of range [137-370]")
 
-        warm_light = (255 * w) * brightness
-        cold_light = (255 * (1 - w)) * brightness
+        b = max(brightness, 255)/255
+
+        color_ratio = (w - 153)/(370-153)
+
+        warm_light = int(color_ratio * w * b)
+        cold_light = int((1-color_ratio) * w * b)
+
+        logging.info(f"Setting Color temp: {w} mireds & {brightness}")
+        logging.info(f" -> Warm: {warm_light} ({color_ratio} * {b})")
+        logging.info(f" -> Cold: {cold_light} ((1 - {color_ratio}) * {b})")
 
         # assemble the message
         msg = bytearray([0x31] if persist else [0x41])  # 0: persistence
@@ -61,12 +77,19 @@ class RBGCWBulb(baseBulb.BaseBulb):
         msg.append(0)
         # 3: blue   - not used in white mode
         msg.append(0)
-        msg.append(int(warm_light or 0))                         # 4: warn white
-        msg.append(int(cold_light or 0))                         # 5: cold white
+        # 4: warn white
+        msg.append(int(warm_light or 0))
+        # 5: cold white
+        msg.append(int(cold_light or 0))
         # 6: write mode - white mode 0x0f
         msg.append(0x0f)
         msg.append(0x0f)                                # 7: terminator bit
         await self._send(helpers.addCheckSum(msg), refreshState)
+        self._raw_state[9] = warm_light
+        self._raw_state[11] = cold_light
+        self._raw_state[6] = 0
+        self._raw_state[7] = 0
+        self._raw_state[8] = 0
         if(refreshState):
             await self.state()
         return self

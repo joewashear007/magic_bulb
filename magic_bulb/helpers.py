@@ -31,7 +31,7 @@ def speedToDelay(speed):
     delay = delay + 1
     return delay
 
-def byteToPercent(byte):
+def byte_to_percent(byte: int) -> float:
     if byte > 255:
         byte = 255
     if byte < 0:

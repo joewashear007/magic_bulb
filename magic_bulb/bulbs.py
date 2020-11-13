@@ -40,7 +40,7 @@ class RBGCWBulb(baseBulb.BaseBulb):
         # 6: write mode - color 0xf0
         msg.append(0xf0)
         msg.append(0x0f)                                # 7: terminator bit
-        await self._send(helpers.addCheckSum(msg), refreshState)
+        await self._send(helpers.addCheckSum(msg))
         self._raw_state[9] = 0
         self._raw_state[11] = 0
         self._raw_state[6] = int(r or 0)
@@ -57,17 +57,18 @@ class RBGCWBulb(baseBulb.BaseBulb):
         """
         if w < 153 or w > 370:
             raise Exception(f"Color Temp '{w}' out of range [137-370]")
-
-        b = max(brightness, 255)/255
+        if brightness < 0 or brightness > 256:
+            raise Exception(f"Brightness '{brightness}' out of range [0-256]")
 
         color_ratio = (w - 153)/(370-153)
 
-        warm_light = int(color_ratio * w * b)
-        cold_light = int((1-color_ratio) * w * b)
+        warm_light = int(color_ratio * brightness)
+        cold_light = int((1-color_ratio) * brightness)
 
         logging.info(f"Setting Color temp: {w} mireds & {brightness}")
-        logging.info(f" -> Warm: {warm_light} ({color_ratio} * {b})")
-        logging.info(f" -> Cold: {cold_light} ((1 - {color_ratio}) * {b})")
+        logging.info(f" -> [153-({w})-370] => {round(color_ratio * 100, 2)}%")
+        logging.info(f" -> Warm: {warm_light} ({color_ratio} * {brightness})")
+        logging.info(f" -> Cold: {cold_light} ((1 - {color_ratio}) * {brightness})")
 
         # assemble the message
         msg = bytearray([0x31] if persist else [0x41])  # 0: persistence
@@ -84,7 +85,7 @@ class RBGCWBulb(baseBulb.BaseBulb):
         # 6: write mode - white mode 0x0f
         msg.append(0x0f)
         msg.append(0x0f)                                # 7: terminator bit
-        await self._send(helpers.addCheckSum(msg), refreshState)
+        await self._send(helpers.addCheckSum(msg))
         self._raw_state[9] = warm_light
         self._raw_state[11] = cold_light
         self._raw_state[6] = 0

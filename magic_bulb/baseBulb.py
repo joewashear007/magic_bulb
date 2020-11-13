@@ -57,24 +57,27 @@ class BaseBulb(ABC):
 
     async def _send(self, msg, wait=False):
         """Send Command to Light Bulb"""
-        if (self._writer is None):
-            logging.debug(
-                f"Creating Connection to light [{self.ipAddress}:{self.port}]")
-            (self._reader, self._writer) = await asyncio.open_connection(self.ipAddress, self.port)
+        # if (self._writer is None):
+        logging.debug(
+            f"Creating Connection to light [{self.ipAddress}:{self.port}]")
+        (reader, writer) = await asyncio.open_connection(self.ipAddress, self.port)
 
         start = timer()
         logging.debug(
             f"Request Data: '{msg!r}' to [{self.ipAddress}:{self.port}] {start}")
-        self._writer.write(msg)
-        await self._writer.drain()
+        writer.write(msg)
+        await writer.drain()
         reqEnd = timer()
-        if(wait):
-            data = await self._reader.read(self._msg_length)
-            end = timer()
-            logging.debug(
-                f"Response Data: '{data!r}' to [{self.ipAddress}:{self.port}] [request End {reqEnd} -> {timedelta(seconds=reqEnd-start)}; End {end} -> {timedelta(seconds=end-start)}")
-            return data
-
+        if (wait):
+            data = await reader.read(self._msg_length)
+        else:
+            data = None
+        writer.close()
+        await writer.wait_closed()
+        end = timer()
+        logging.debug(
+            f"Response Data: '{data!r}' to [{self.ipAddress}:{self.port}] [request End {reqEnd} -> {timedelta(seconds=reqEnd-start)}; End {end} -> {timedelta(seconds=end-start)}")
+        return data
 
     async def state(self):
         """
@@ -118,30 +121,30 @@ class BaseBulb(ABC):
         """
         raw_response = await self._send(self._state_msg, wait=True)
         self._raw_state = bytearray(raw_response)
-        logging.info(str(self._raw_state))
+        logging.debug(str(self._raw_state))
         return self._raw_state
 
-    async def on(self, refreshState=False, wait = False):
+    async def on(self, refreshState=False):
         """
         Turn the light bulb on
 
         * ON = 0x23
         * OFF = 0x24
         """
-        await self._send(self._power_on_msg, wait)
+        await self._send(self._power_on_msg)
         self._raw_state[2] = 0x23
         if(refreshState):
             await self.state()
         return self
 
-    async def off(self, refreshState=False, wait = False):
+    async def off(self, refreshState=False):
         """
         Turn the light bulb on
 
         * ON = 0x23
         * OFF = 0x24
         """
-        await self._send(self._power_off_msg, wait)
+        await self._send(self._power_off_msg)
         self._raw_state[2] = 0x24
         if(refreshState):
             await self.state()
@@ -189,9 +192,10 @@ class BaseBulb(ABC):
 
             # should give values in precents
             warm = (self._raw_state[9]/b)/255
-            logging.info(f"-- Calculate Brightness [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {153 + int((370-153) * warm)}")
+            logging.info(
+                f"-- Calculate Brightness [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {153 + int((370-153) * warm)}")
             return 153 + int((370-153) * warm)
-        else :
+        else:
             return None
 
     @property

@@ -14,24 +14,15 @@ async def ColorCycle():
     print("")
     light = magic_bulb.RBGCWBulb("10.0.0.21")
 
+
     print("Turning ON...")
-    await light.on()
+    await light.on(wait=True)
     await light.state()
     print(light)
 
-    for x in range(0, 100, 10):
-        print("")
-        i = x / 100
-        brightness=random.randint(25,100)
-        rgb = colorsys.hsv_to_rgb(i, 1.0, 100)
-        print(f"Set Color {i}, {brightness} ({rgb!s})")
-        await light.setRgb(*rgb, brightness=brightness)
-        print(light)
-        await asyncio.sleep(0.1)
-
     print("")
     print("Turning OFF...")
-    await light.off()
+    await light.off(wait=True)
     await light.state()
     print(light)
 

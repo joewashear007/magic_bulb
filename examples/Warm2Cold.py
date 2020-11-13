@@ -7,7 +7,7 @@ import logging
 import colorsys
 
 print(dir(magic_bulb))
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 async def Run():
@@ -19,15 +19,15 @@ async def Run():
     await light.on()
     print(light)
 
-    for x in range(0, 100, 10):
-        for y in range(0, 100, 10):
+    x = 335
+    for x in range(153, 370, 10):
+        for y in range(1, 255, 10):
             print("")
-            i = x / 100
-            j = y / 100
-            print(f"Set Color: white color = {i}; brightness = {j}")
-            await light.setCw(i, j, refreshState=False)
-            await asyncio.sleep(0.1)
+            print(f"Set Color: white color = {x}; brightness = {y}")
+            await light.setCw(x, y, refreshState=False)
+            await asyncio.sleep(0.05)
 
+    await asyncio.sleep(1)
     print("")
     print("Turning OFF...")
     await light.off()

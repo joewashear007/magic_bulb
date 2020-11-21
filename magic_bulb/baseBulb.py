@@ -120,7 +120,30 @@ class BaseBulb(ABC):
 
         """
         raw_response = await self._send(self._state_msg, wait=True)
+        logging.info("Received Raw Response from Light:")
+        logging.info("----------------------------------------------")
+        index       = "Index:    "
+        current     = "Current:  "
+        recieved    = "Recieved: "
+        updated     = "Updated:  "
+        for i in range(len(raw_response)):
+            index += str(i).rjust(3) + ", "
+        for i in self._raw_state:
+            current += str(i).rjust(3) + ", "
+        for i in raw_response:
+            recieved += str(i).rjust(3) + ", "
+        
         self._raw_state = bytearray(raw_response)
+        
+        for i in self._raw_state:
+            updated += str(i).rjust(3) + ", "
+        
+        logging.info(index)
+        logging.info(current)
+        logging.info(recieved)
+        logging.info(updated)
+
+        logging.info(f"Loaded State of Light:  {self._raw_state}")
         logging.debug(str(self._raw_state))
         return self._raw_state
 
@@ -191,9 +214,10 @@ class BaseBulb(ABC):
             b = int(self._raw_state[9]) + int(self._raw_state[11])
 
             # should give values in precents
-            warm = (self._raw_state[9]/b)/255
+            warm = (self._raw_state[9]/b)
             logging.info(
-                f"-- Calculate Brightness [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {153 + int((370-153) * warm)}")
+                f"-- Calculate Color Temp [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {153 + int((370-153) * warm)}")
+            logging.info(f"Get CW Bytes          : {self._raw_state}")
             return 153 + int((370-153) * warm)
         else:
             return None
@@ -205,6 +229,7 @@ class BaseBulb(ABC):
         For white mood return current led level. 
         For RGB calculate the HSV and return the 'value'.
         """
+        logging.info(f"Get Brightness Bytes:   {self._raw_state}")
         if self.mode == "white":
             return max(int(self._raw_state[9]) + int(self._raw_state[11]), 255)
         else:

@@ -55,6 +55,10 @@ class RBGCWBulb(baseBulb.BaseBulb):
         * Cold-White in mireds 153-370
         * Brightness on scale 0-255
         """
+        if w is None:
+            w = self.color_temp
+            logging.info(f"Color Temp is not given, using existing color temp {w}")
+
         if w < 153 or w > 370:
             raise Exception(f"Color Temp '{w}' out of range [137-370]")
         if brightness < 0 or brightness > 256:
@@ -91,6 +95,8 @@ class RBGCWBulb(baseBulb.BaseBulb):
         self._raw_state[6] = 0
         self._raw_state[7] = 0
         self._raw_state[8] = 0
+        logging.info(f"Set [warm,cold] = [{self._raw_state[9]},{self._raw_state[11]}]")
+        logging.info(f"Set CW Bytes:           {self._raw_state}")
         if(refreshState):
             await self.state()
         return self

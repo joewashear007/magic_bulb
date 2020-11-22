@@ -50,14 +50,17 @@ class RBGCWBulb(baseBulb.BaseBulb):
             await self.state()
         return self
 
-    async def setCw(self, w=None, brightness=None, persist=True, refreshState=True):
+    async def setCw(self, w=None, brightness=None, persist=True, ensure=True):
         """
         * Cold-White in mireds 153-370
         * Brightness on scale 0-255
         """
         if w is None:
-            w = self.color_temp
+            w = self.color_temp if self.color_temp else 370
             logging.info(f"Color Temp is not given, using existing color temp {w}")
+        if brightness is None:
+            brightness = self.brightness if self.brightness else 255
+            logging.info(f"Brightness is not given, using existing {self.brightness} or 255")
 
         if w < 153 or w > 370:
             raise Exception(f"Color Temp '{w}' out of range [137-370]")
@@ -69,10 +72,16 @@ class RBGCWBulb(baseBulb.BaseBulb):
         warm_light = int(color_ratio * brightness)
         cold_light = int((1-color_ratio) * brightness)
 
-        logging.info(f"Setting Color temp: {w} mireds & {brightness}")
+        logging.info(f"Setting Color temp: {w} mireds & {brightness} brightness")
         logging.info(f" -> [153-({w})-370] => {round(color_ratio * 100, 2)}%")
         logging.info(f" -> Warm: {warm_light} ({color_ratio} * {brightness})")
         logging.info(f" -> Cold: {cold_light} ((1 - {color_ratio}) * {brightness})")
+
+        self._raw_state[9] = warm_light
+        self._raw_state[11] = cold_light
+        self._raw_state[6] = 0
+        self._raw_state[7] = 0
+        self._raw_state[8] = 0
 
         # assemble the message
         msg = bytearray([0x31] if persist else [0x41])  # 0: persistence
@@ -90,13 +99,15 @@ class RBGCWBulb(baseBulb.BaseBulb):
         msg.append(0x0f)
         msg.append(0x0f)                                # 7: terminator bit
         await self._send(helpers.addCheckSum(msg))
-        self._raw_state[9] = warm_light
-        self._raw_state[11] = cold_light
-        self._raw_state[6] = 0
-        self._raw_state[7] = 0
-        self._raw_state[8] = 0
         logging.info(f"Set [warm,cold] = [{self._raw_state[9]},{self._raw_state[11]}]")
-        logging.info(f"Set CW Bytes:           {self._raw_state}")
-        if(refreshState):
+        if(ensure):
             await self.state()
+            logging.debug(self)
+            i = 0
+            while self._raw_state[9] != warm_light or self._raw_state[11] != cold_light:
+                logging.debug(f"    - {i}:  [{self._raw_state[9]},{self._raw_state[11]}] vs. [{warm_light, cold_light}] \\ {self}")
+                await asyncio.sleep(0.1)
+                await self.state()
+                i += 1
+            logging.info(f"Light State Ensured in {i} attempts")
         return self

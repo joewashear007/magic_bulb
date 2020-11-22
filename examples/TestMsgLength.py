@@ -12,19 +12,39 @@ logging.root.setLevel(logging.INFO)
 
 async def ColorCycle():
     print("")
-    light = magic_bulb.RBGCWBulb("10.0.0.21")
+    light = magic_bulb.RBGCWBulb("10.0.0.26")
+    await light.state()
 
 
     print("Turning ON...")
-    await light.on(wait=True)
-    await light.state()
+    if not light.is_on:
+        await light.on()
     print(light)
+    print()
+    print("======================================================")
 
-    print("")
-    print("Turning OFF...")
-    await light.off(wait=True)
-    await light.state()
-    print(light)
+    for x in range(50, 250, 50):
+        print("")
+        print("")
+        print(f"---------------------- Iteration: x = {x} --------------------")
+        await light.setCw(brightness= x)
+        print(light)
+        if light.brightness != x:
+            raise Exception("Failed to Match")
+        print(f" > Light Brightness: {light.brightness} [before]")
+        # await light.state()
+        # print(f" > Light Brightness: {light.brightness} [after]")
+        # print(light)
+        # await asyncio.sleep(5)
+        # await light.state()
+        # print(f" > Light Brightness: {light.brightness} [sleep]")
+        # print(light)
+        input("Press Enter to continue...")
+
+    # print("Turning OFF...")
+    # await light.off()
+    # await light.state()
+    # print(light)
 
     print("Cleaning up...")
     await light.dispose()

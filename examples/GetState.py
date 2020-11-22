@@ -11,13 +11,14 @@ logging.basicConfig(level=logging.INFO, format=logging.BASIC_FORMAT)
 logging.root.setLevel(logging.INFO)
 
 async def ColorCycle():
-    print("")
     light = magic_bulb.RBGCWBulb("10.0.0.26")
 
+    print("")
     await light.state()
-    print(f"Light Brightness: {light.brightness}")
+    print(f"> Light Brightness: {light.brightness}")
     print(light)
 
+    print("")
     print("Cleaning up...")
     await light.dispose()
 

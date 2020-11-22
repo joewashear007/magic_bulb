@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 async def Run():
-    light = magic_bulb.RBGCWBulb("10.0.0.21")
+    light = magic_bulb.RBGCWBulb("10.0.0.26")
     print("Config Bulb...")
 
     print("")
@@ -24,7 +24,7 @@ async def Run():
         for y in range(1, 255, 10):
             print("")
             print(f"Set Color: white color = {x}; brightness = {y}")
-            await light.setCw(x, y, refreshState=False)
+            await light.setCw(x, y, ensure=False)
             await asyncio.sleep(0.05)
 
     await asyncio.sleep(1)

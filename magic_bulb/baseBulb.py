@@ -68,7 +68,7 @@ class BaseBulb(ABC):
         writer.write(msg)
         await writer.drain()
         reqEnd = timer()
-        if (wait):
+        if wait:
             data = await reader.read(self._msg_length)
         else:
             data = None
@@ -120,30 +120,33 @@ class BaseBulb(ABC):
 
         """
         raw_response = await self._send(self._state_msg, wait=True)
-        logging.info("Received Raw Response from Light:")
-        logging.info("----------------------------------------------")
+        logging.debug("Received Raw Response from Light:")
+        logging.debug("----------------------------------------------")
         index       = "Index:    "
         current     = "Current:  "
-        recieved    = "Recieved: "
+        received    = "Received: "
         updated     = "Updated:  "
         for i in range(len(raw_response)):
             index += str(i).rjust(3) + ", "
         for i in self._raw_state:
             current += str(i).rjust(3) + ", "
         for i in raw_response:
-            recieved += str(i).rjust(3) + ", "
+            received += str(i).rjust(3) + ", "
         
+        checkbyte = sum(raw_response[0:len(raw_response)-1]) & 0xFF
+        logging.debug(f"  -- Check Byte Comparesion {raw_response[len(raw_response)-1]} received == {checkbyte} computed")
+
         self._raw_state = bytearray(raw_response)
         
         for i in self._raw_state:
             updated += str(i).rjust(3) + ", "
         
-        logging.info(index)
-        logging.info(current)
-        logging.info(recieved)
-        logging.info(updated)
+        logging.debug(index)
+        logging.debug(current)
+        logging.debug(received)
+        logging.debug(updated)
 
-        logging.info(f"Loaded State of Light:  {self._raw_state}")
+        logging.debug(f"Loaded State of Light:  {self._raw_state}")
         logging.debug(str(self._raw_state))
         return self._raw_state
 
@@ -209,16 +212,14 @@ class BaseBulb(ABC):
     def color_temp(self):
         """Return the CT color value in mireds."""
         if self.mode == "white":
-            # these calulatoins could be bad...
+            # these calculations could be bad...
             # the sum of these never goes over 255.. so brightness is the sum scaled between 0-255
             b = int(self._raw_state[9]) + int(self._raw_state[11])
 
-            # should give values in precents
             warm = (self._raw_state[9]/b)
-            logging.info(
-                f"-- Calculate Color Temp [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {153 + int((370-153) * warm)}")
-            logging.info(f"Get CW Bytes          : {self._raw_state}")
-            return 153 + int((370-153) * warm)
+            mireds = 153 + int((370-153) * warm)
+            logging.debug(f"-- Calculate Color Temp [{self._raw_state[9]}, {self._raw_state[11]}] -> ratio: {warm} -> {mireds}")
+            return mireds
         else:
             return None
 
@@ -230,12 +231,12 @@ class BaseBulb(ABC):
         For RGB calculate the HSV and return the 'value'.
         """
         if self.mode == "white":
-            logging.info(f"Get Brightness (mode: white) Bytes: {int(self._raw_state[9])}+ {int(self._raw_state[11])}")
             brightness = int(self._raw_state[9]) + int(self._raw_state[11])
+            logging.debug(f"Get Brightness (mode: white) Bytes: {int(self._raw_state[9])} + {int(self._raw_state[11])} = {brightness}")
             return  brightness
         else:
             hsv = colorsys.rgb_to_hsv(*self.rgb)
-            logging.info(f"Get Brightness (mode: color) Bytes: {self.rgb} -> {hsv}")
+            logging.debug(f"Get Brightness (mode: color) Bytes: {self.rgb} -> {hsv}")
             return hsv[2]
 
     def __str__(self):

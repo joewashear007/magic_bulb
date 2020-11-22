@@ -229,12 +229,14 @@ class BaseBulb(ABC):
         For white mood return current led level. 
         For RGB calculate the HSV and return the 'value'.
         """
-        logging.info(f"Get Brightness Bytes:   {self._raw_state}")
         if self.mode == "white":
-            return max(int(self._raw_state[9]) + int(self._raw_state[11]), 255)
+            logging.info(f"Get Brightness (mode: white) Bytes: {int(self._raw_state[9])}+ {int(self._raw_state[11])}")
+            brightness = int(self._raw_state[9]) + int(self._raw_state[11])
+            return  brightness
         else:
-            _, _, v = colorsys.rgb_to_hsv(*self.rgb)
-            return v * 2.55
+            hsv = colorsys.rgb_to_hsv(*self.rgb)
+            logging.info(f"Get Brightness (mode: color) Bytes: {self.rgb} -> {hsv}")
+            return hsv[2]
 
     def __str__(self):
         out = f"{self.__class__.__name__} [{self.ipAddress}:{self.port}] "
@@ -246,8 +248,9 @@ class BaseBulb(ABC):
         if self.mode == "color":
             out += f" | COLOR {self.rgb}"
         elif self.mode == "white":
-            out += f" | WHITE ({int(self._raw_state[9]) + int(self._raw_state[11])})"
-        out += f" {self.brightness}% "
+            out += f" | WHITE {self.color_temp} mireds"
+            out += f" ([{self._raw_state[9]}] + [{self._raw_state[11]}] = {int(self._raw_state[9]) + int(self._raw_state[11])} of 255);"
+        out += f" | BRIGHTNESS: {self.brightness} of 255 ({round(self.brightness/2.55)}%) "
 
         mode_str = " Raw State: "
         for _r in self._raw_state:
